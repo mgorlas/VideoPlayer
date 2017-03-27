@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">VideoPlayer</string>
+    <string-array name="images">
+        <item>video1</item>
+        <item>emily_hearn</item>
+        <item>sia</item>
+        <item>aurora</item>
+        <item>ellie_goulding</item>
+        <item>halsey</item>
+        <item>jess_glynne</item>
+        <item>melanie_marinez</item>
+        <item>selena_gomez</item>
+        <item>selena_gomez_star_dance</item>
+        <item>taylor_swift</item>
+        <item>alessia_cara</item>
+    </string-array>
+    <string-array name="music">
+        <item>video1</item>
+        <item>waking_up_again_emily_hearn</item>
+        <item>birds_set_free_sia</item>
+        <item>runaway_aurora</item>
+        <item>halcyon_ellie_goulding</item>
+        <item>ghost_halsey</item>
+        <item>dont_be_so_hard_on_yourself_jess_glynne</item>
+        <item>cry_baby_melanie_marinez</item>
+        <item>revival_selena_gomez</item>
+        <item>birthday_selena_gomez</item>
+        <item>this_love_taylor_swift</item>
+        <item>seventeen_alessia_cara</item>
+    </string-array>
+</resources>
