@@ -1,35 +1,44 @@
 package com.a203217.mgorlas.videoplayer;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.AudioManager;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
+import android.media.ThumbnailUtils;
 import android.os.Bundle;
 import android.content.Context;
+import android.os.Handler;
+import android.provider.MediaStore;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.MediaController;
 import android.widget.SeekBar;
+import android.widget.VideoView;
 
 /**
  * Created by marze on 18.03.2017.
  */
 
-public class Player extends AppCompatActivity{
+public class Player extends Activity {
 
     private Button backButton;
     private Button playButton;
     private Button pauseButton;
-    private SeekBar volume;
-    private ImageView imageView;
-    private int imageId;
-    private int musicId;
+    private SeekBar progress;
     private int position;
-    private MediaPlayer mediaPlayer = null;
-    private AudioManager audioManager = null;
+    private int startTime = 0;
+    private int finalTime = 0;
+    private Handler myHandler = new Handler();
+    private ViewPager viewPager;
+
 
 
     @Override
@@ -37,24 +46,28 @@ public class Player extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.player_activity);
 
-
-        imageId = getIntent().getIntExtra("id", 0);
-        musicId = getIntent().getIntExtra("musicId", 0);
         position = getIntent().getIntExtra("position", 0);
 
         backButton = (Button) findViewById(R.id.btnClose);
         playButton = (Button) findViewById(R.id.play);
         pauseButton = (Button) findViewById(R.id.pause);
+        progress = (SeekBar) findViewById(R.id.progress);
 
-        imageView = (ImageView) findViewById(R.id.image);
-        volume = (SeekBar) findViewById(R.id.volume);
+        viewPager = (ViewPager) findViewById(R.id.video);
+        VideoPagerAdapter adapter = new VideoPagerAdapter();
+        viewPager.setAdapter(adapter);
+        viewPager.setCurrentItem(position);
 
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-        setImage();
-        setMusic();
         setVolume();
         createListeners();
+    }
+
+    public int getPosition(){
+        return position;
+    }
+
+    public void setPosition(int position){
+        this.position = position;
     }
 
     @Override
@@ -64,58 +77,69 @@ public class Player extends AppCompatActivity{
     @Override
     public void onStop(){
         super.onStop();
-        mediaPlayer.stop();
+        if( getCurrentView() != null)
+            getCurrentView().stopPlayback();
+    }
+
+    public VideoView getCurrentView(){
+        return (VideoView)viewPager.getFocusedChild();
     }
 
     public void setVolume(){
-        try
-        {
-            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            volume.setMax(audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-            volume.setProgress(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC));
+        try {
+            progress.setMax(getCurrentView().getDuration());
+            progress.setProgress(0);
+        } catch (Exception e){}
 
-            volume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener()
-            {
-                @Override
-                public void onStopTrackingTouch(SeekBar arg0)
-                {
-                }
+        progress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if(fromUser)
+                    getCurrentView().seekTo(progress);
+            }
 
-                @Override
-                public void onStartTrackingTouch(SeekBar arg0)
-                {
-                }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekbar) {
+                myHandler.removeCallbacks(updateTimeTask);
+            }
 
-                @Override
-                public void onProgressChanged(SeekBar arg0, int progress, boolean arg2)
-                {
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
-                }
-            });
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekbar) {
+                myHandler.removeCallbacks(updateTimeTask);
+                getCurrentView().seekTo(progress.getProgress());
+                updateProgressBar();
+            }
 
-    public void setMusic(){
-        mediaPlayer = MediaPlayer.create(Player.this, musicId);
-    }
-
-    public void setImage(){
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), imageId);
-        imageView.setImageBitmap(bitmap);
+        });
     }
 
     public void createListeners(){
+
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+            @Override
+            public void onPageSelected(int position) {
+                progress.setProgress(getCurrentView().getCurrentPosition());
+                if(getCurrentView().getCurrentPosition() == getCurrentView().getDuration()){
+                    getCurrentView().seekTo(0);
+                }
+                setPosition(position);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                getCurrentView().pause();
+            }
+        });
+
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
-                    mediaPlayer.stop();
+                    getCurrentView().stopPlayback();
                     Intent intent = new Intent(Player.this, VideoGallery.class);
-                    intent.putExtra("position", position);
                     startActivity(intent);
                 }
                 catch(Exception exc)
@@ -129,7 +153,14 @@ public class Player extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 try {
-                    mediaPlayer.start();
+                    VideoView vv = getCurrentView();
+                    if(!vv.isPlaying()) {
+                        vv.start();
+                        finalTime = vv.getDuration();
+                        startTime = vv.getCurrentPosition();
+                        progress.setProgress((int) startTime);
+                        updateProgressBar();
+                    }
                 }
                 catch(Exception exc)
                 {
@@ -142,8 +173,8 @@ public class Player extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 try {
-                    if(mediaPlayer == null) setMusic();
-                    mediaPlayer.pause();
+                    if(getCurrentView().isPlaying())
+                        getCurrentView().pause();
                 }
                 catch(Exception exc)
                 {
@@ -151,5 +182,74 @@ public class Player extends AppCompatActivity{
                 }
             }
         });
+    }
+
+    private void updateProgressBar() {
+        myHandler.postDelayed(updateTimeTask, 100);
+    }
+
+    private Runnable updateTimeTask = new Runnable() {
+        public void run() {
+            progress.setProgress(getCurrentView().getCurrentPosition());
+            progress.setMax(finalTime);
+            myHandler.postDelayed(this, 100);
+        }
+    };
+
+
+    private class VideoPagerAdapter extends PagerAdapter {
+
+        private int[] mVideos;
+
+        public VideoPagerAdapter(){
+            this.mVideos = getData();
+        }
+
+        private int[] getData() {
+            int[] results = new int[12];
+            for (int i = 0; i < 12; i++) {
+                int id = getResources().getIdentifier("video"+(i+1), "raw", getPackageName());
+                results[i] = id;
+            }
+            return results;
+        }
+
+        @Override
+        public int getCount() {
+            return 12;
+        }
+
+        @Override
+        public boolean isViewFromObject(View view, Object object) {
+            return view == ((VideoView) object);
+        }
+
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+            Context context = Player.this;
+            VideoView videoView = new VideoView(context);
+
+            videoView.setVideoPath("android.resource://" + context.getPackageName() + "/" + mVideos[position]);
+            MediaController mediaController = new MediaController(context);
+            mediaController.setVisibility(View.GONE);
+            videoView.setMediaController(mediaController);
+            videoView.seekTo(100);
+
+            videoView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
+
+            ((ViewPager) container).addView(videoView, 0);
+
+            return videoView;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            ((ViewPager) container).removeView((VideoView) object);
+        }
     }
 }

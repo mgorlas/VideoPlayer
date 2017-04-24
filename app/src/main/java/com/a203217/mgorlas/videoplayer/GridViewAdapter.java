@@ -2,7 +2,15 @@ package com.a203217.mgorlas.videoplayer;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.media.MediaPlayer;
+import android.media.ThumbnailUtils;
+import android.provider.MediaStore;
+import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -11,8 +19,12 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
+import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.MediaController;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import java.util.ArrayList;
@@ -47,43 +59,29 @@ public class GridViewAdapter extends ArrayAdapter {
         } else {
             holder = (ViewHolder) row.getTag();
         }
-        VideoItem item = (VideoItem) data.get(position);
-        holder.video.setVideoPath("android.resource://com.a203217.mgorlas.videoplayer/"+item.getId());
-        MediaController mediaController = new MediaController(getContext());
-        holder.video.setMediaController(mediaController);
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        Display display = wm.getDefaultDisplay();
-        int width = display.getWidth();
-        int height = display.getHeight() - getStatusBarHeight();// - getTitleBarHeight();
-        LinearLayout.LayoutParams parms = new LinearLayout.LayoutParams(width/2,height/4);
-        holder.video.setLayoutParams(parms);
 
-        holder.video.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if(MotionEvent.ACTION_DOWN == event.getAction()){
-                    int i = 0 ;
-                } else{
-                    if(MotionEvent.ACTION_UP == event.getAction()){
-                    }
-                }
-                return false;
-            }
-        });
+        //holder.video.setClickable(false);
+        //holder.video.setFocusable(false);
 
-
+        setVideo(holder, position);
         return row;
     }
 
-    public int getStatusBarHeight() {
-        Rect r = new Rect();
-        Window w = ((Activity) context).getWindow();
-        w.getDecorView().getWindowVisibleDisplayFrame(r);
-        return r.top;
-    }
-    public int getTitleBarHeight() {
-        int viewTop = ((Activity) context).getWindow().findViewById(Window.ID_ANDROID_CONTENT).getTop();
-        return viewTop;
+    private void setVideo(ViewHolder holder, int position) {
+        VideoItem item = (VideoItem) data.get(position);
+
+        holder.video.setVideoPath("android.resource://"+ context.getPackageName() + "/" + item.getDemoId());
+        MediaController mediaController = new MediaController(getContext());
+        mediaController.setVisibility(View.GONE);
+        holder.video.setMediaController(mediaController);
+        holder.video.seekTo(100);
+
+        holder.video.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer mp) {
+                mp.setLooping(true);
+            }
+        });
     }
 
     static class ViewHolder {

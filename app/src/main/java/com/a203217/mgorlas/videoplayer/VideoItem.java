@@ -7,14 +7,20 @@ import android.graphics.Bitmap;
  */
 
 public class VideoItem {
-    private int id;
+    private int videoId;
+    private int demoId;
 
-    public VideoItem(int id) {
+    public VideoItem(int videoId, int demoId) {
         super();
-        this.id = id;
+        this.videoId = videoId;
+        this.demoId = demoId;
     }
 
-    public int getId(){
-        return id;
+    public int getVideoId(){
+        return videoId;
+    }
+
+    public int getDemoId() {
+        return demoId;
     }
 }
